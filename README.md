@@ -149,24 +149,3 @@ outcomes, and remains worth doing.
 Note that `std::binomial_distribution` is not bit-portable across C++ standard
 library versions, so absolute values may shift very slightly on a different
 platform. Comparisons between designs within a platform are unaffected.
-
-## Development
-
-Documentation in `man/` is generated from the roxygen comments in `R/`. After
-cloning:
-
-```r
-Rcpp::compileAttributes()   # only if you edit src/adaptboin.cpp
-devtools::document()
-devtools::test()
-devtools::check()
-```
-
-## Citation
-
-Chen, S. A Practical Evaluation of Finite-Sample BOIN Calibration and Bayesian
-Smoothing in Phase I Dose Finding.
-
-## License
-
-MIT.
