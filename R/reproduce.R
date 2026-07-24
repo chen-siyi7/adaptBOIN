@@ -62,10 +62,13 @@ reproduce_paper <- function(out_dir = "adaptboin_output", n_sim = 2000L,
   wr(do.call(rbind, lapply(n_res, function(r) data.frame(
     sc = r$sc_idx, design = r$design, N = r$N_val, pcs = round(r$pcs, 1)))),
     "n_sensitivity.csv")
+  tie_res <- tie_sensitivity(n_sim = n_sim, params = params)
+  wr(tie_res, "tie_sensitivity.csv")
   loss_res <- loss_sensitivity(n_sim = n_sim, params = params)
   wr(do.call(rbind, lapply(loss_res, function(r) data.frame(
-    k_over = r$k_over, sc = r$sc_idx, pcs = round(r$pcs, 1),
-    pct_over = round(r$pct_over_sel, 1), pod = round(r$pod, 1)))),
+    k_over = r$k_over, admissible = r$admissible, sc = r$sc_idx,
+    pcs = round(r$pcs, 1), pct_over = round(r$pct_over_sel, 1),
+    pod = round(r$pod, 1)))),
     "loss_sensitivity.csv")
 
   steep_df <- NULL; str_df <- NULL; elim_df <- NULL
@@ -102,6 +105,6 @@ reproduce_paper <- function(out_dir = "adaptboin_output", n_sim = 2000L,
 
   message("Done. Outputs in ", normalizePath(out_dir))
   invisible(list(df = df, results = results, crm = crm_res, ess = ess_res,
-                 ka = ka_res, nsens = n_res, loss = loss_res,
+                 ka = ka_res, nsens = n_res, loss = loss_res, tie = tie_res,
                  steep = steep_df, straddle = str_df, elim = elim_df))
 }

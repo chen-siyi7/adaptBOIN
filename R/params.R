@@ -67,3 +67,29 @@ adapt_params_original <- function() {
   p$elim_b0  <- p$b0
   p
 }
+
+#' Largest admissible overdose-aversion multiplier
+#'
+#' The binding constraint on \code{k_over} is the no-DLT condition required for
+#' the count-threshold representation: the Bayes action at zero events in the
+#' first cohort must be to escalate. Comparing the escalate and stay risks there
+#' gives a closed-form bound, which this function evaluates. Because it depends on
+#' the cohort size and the escalation prior, it must be recomputed when those
+#' change rather than carried over.
+#'
+#' @param params Parameter list from \code{\link{adapt_params}}.
+#' @param mild,sev Mild and severe loss entries.
+#' @return The supremum of admissible \code{k_over}. Values at or above it produce
+#'   a design that will not escalate after a first cohort with no events.
+#' @examples
+#' kappa_max()          # about 2.61 for the default settings
+#' @export
+kappa_max <- function(params = adapt_params(), mild = 0.5, sev = 1.5) {
+  a <- params$a0
+  b <- params$b0 + params$m
+  p1 <- stats::pbeta(params$phi1, a, b)
+  p3 <- 1 - stats::pbeta(params$phi2, a, b)
+  p2 <- 1 - p1 - p3
+  if (p1 <= p2) return(0)          # no positive multiplier is admissible
+  mild * (p1 - p2) / (p3 * (sev - mild))
+}

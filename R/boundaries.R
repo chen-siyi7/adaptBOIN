@@ -6,9 +6,22 @@
 #' @examples
 #' adapt_table()[["30"]]
 #' @export
-adapt_table <- function(params = adapt_params()) {
-  build_adap_tbl(params$phi1, params$phi2, params$a0, params$b0,
-                 params$N, params$m, params$loss)
+adapt_table <- function(params = adapt_params(), check = TRUE) {
+  tb <- build_adap_tbl(params$phi1, params$phi2, params$a0, params$b0,
+                       params$N, params$m, params$loss)
+  if (isTRUE(check)) {
+    # The no-DLT condition of the count-threshold representation: at zero events
+    # the Bayes action must be to escalate. Checked on the built table, so it
+    # holds for any loss matrix, not only the k_over parameterisation.
+    bad <- names(tb)[vapply(tb, function(a) as.integer(a)[1] != 0L, logical(1))]
+    if (length(bad))
+      warning("The loss matrix gives a design that does not escalate after a ",
+              "cohort with no events, at n = ", paste(bad, collapse = ", "),
+              ". This violates the no-DLT condition and is not a usable design. ",
+              "See kappa_max() for the largest admissible overdose aversion.",
+              call. = FALSE)
+  }
+  tb
 }
 
 #' Effective rate boundaries of the adaptive table

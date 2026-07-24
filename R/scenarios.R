@@ -19,13 +19,20 @@ scenarios <- list(
 
 #' Design codes understood by the C++ engine
 #'
+#' Note that \code{mtpi} (code 5) is the original mTPI of Ji and Wang (2013),
+#' which compares unit probability masses over three intervals of unequal width,
+#' while \code{mtpi2} (code 7) is the mTPI-2 refinement of Guo et al. (2017),
+#' which uses subintervals of equal width. The two are distinct designs and their
+#' decision tables differ; mTPI-2 de-escalates somewhat earlier. The accompanying
+#' manuscript reports \code{mtpi}.
+#'
 #' @format A named integer vector.
 #' @export
 design_codes <- c(adaptive_iso = 0L, adaptive_bern = 1L, boin_bern = 2L,
-                  boin = 3L, crm = 4L, mtpi2 = 5L, gboins = 6L)
+                  boin = 3L, crm = 4L, mtpi = 5L, gboins = 6L, mtpi2 = 7L)
 
 monotone_idx <- 1:6
-primary_designs <- c("adaptive_iso", "boin", "crm", "mtpi2", "gboins")
+primary_designs <- c("adaptive_iso", "boin", "crm", "mtpi", "gboins")
 
 #' True MTD under a stated tie convention
 #'
