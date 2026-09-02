@@ -14,6 +14,7 @@
 #'   effect on Windows.
 #' @param do_figures Write figures.
 #' @param do_studies Run the steepness, offset-MTD and elimination studies.
+#' @param do_reference Run the independent MCMC posterior diagnostic.
 #' @param params Parameter list.
 #' @return Invisibly, a list holding every result object.
 #' @examples
@@ -24,7 +25,8 @@
 #' @export
 reproduce_paper <- function(out_dir = "adaptboin_output", n_sim = 2000L,
                             n_cores = 1L, do_figures = TRUE,
-                            do_studies = TRUE, params = adapt_params()) {
+                            do_studies = TRUE, do_reference = TRUE,
+                            params = adapt_params()) {
   if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
   wr <- function(x, f) utils::write.csv(x, file.path(out_dir, f),
                                         row.names = FALSE)
@@ -64,6 +66,8 @@ reproduce_paper <- function(out_dir = "adaptboin_output", n_sim = 2000L,
     "n_sensitivity.csv")
   tie_res <- tie_sensitivity(n_sim = n_sim, params = params)
   wr(tie_res, "tie_sensitivity.csv")
+  gboins_cal <- gboins_calibration_sensitivity(n_sim = n_sim, params = params)
+  wr(gboins_cal, "gboins_calibration_sensitivity.csv")
   loss_res <- loss_sensitivity(n_sim = n_sim, params = params)
   wr(do.call(rbind, lapply(loss_res, function(r) data.frame(
     k_over = r$k_over, admissible = r$admissible, sc = r$sc_idx,
@@ -71,11 +75,15 @@ reproduce_paper <- function(out_dir = "adaptboin_output", n_sim = 2000L,
     pod = round(r$pod, 1)))),
     "loss_sensitivity.csv")
 
-  steep_df <- NULL; str_df <- NULL; elim_df <- NULL
+  steep_df <- NULL; high_df <- NULL; str_df <- NULL; elim_df <- NULL
+  alloc_df <- NULL
   if (do_studies) {
     message("Steepness gradient ...")
     steep_df <- steep_curve_study(n_sim = n_sim, params = params)
     wr(steep_df, "study_steep_curve.csv")
+    message("High-MTD local steepness ...")
+    high_df <- high_mtd_steepness_study(n_sim = n_sim, params = params)
+    wr(high_df, "study_high_mtd_steepness.csv")
     message("Offset MTD across sample sizes ...")
     str_df <- straddle_N_study(n_sim = n_sim, params = params)
     wr(str_df, "study_offset_mtd_byN.csv")
@@ -83,13 +91,37 @@ reproduce_paper <- function(out_dir = "adaptboin_output", n_sim = 2000L,
     elim_df <- elim_rule_study(n_sim = n_sim, params = params,
                                Nvals = c(30L, 60L, 90L))
     wr(elim_df, "study_elim_rule.csv")
+    message("Offset-MTD allocation diagnostic ...")
+    alloc_df <- diagnose_offset_anomaly(n_sim = n_sim, params = params,
+                                        Nvals = c(30L, 60L, 90L))
+    wr(alloc_df, "study_offset_allocation.csv")
+  }
+
+  ref_res <- NULL
+  if (do_reference) {
+    message("Independent Bernstein posterior diagnostic ...")
+    ref_res <- bern_reference_study(params = params)
+    wr(ref_res$summary, "diagnostic_reference_posterior_summary.csv")
+    wr(ref_res$dose, "diagnostic_reference_posterior_dose.csv")
   }
 
   if (do_figures && requireNamespace("ggplot2", quietly = TRUE)) {
     message("Figures ...")
+    pdf_device <- function(filename, width, height, ...) {
+      if (capabilities("aqua")) {
+        grDevices::quartz(file = filename, type = "pdf", width = width,
+                          height = height, family = "Arial")
+      } else {
+        grDevices::cairo_pdf(filename = filename, width = width,
+                             height = height, family = "sans", bg = "white")
+      }
+    }
     sv <- function(p, f, w = 7, h = 5)
-      ggplot2::ggsave(file.path(out_dir, f), p, width = w, height = h)
-    sv(fig_ess(params, n_sim),      "fig_ess.pdf")
+      ggplot2::ggsave(
+        file.path(out_dir, f), p, width = w, height = h, units = "in",
+        bg = "white", device = pdf_device
+      )
+    sv(fig_ess(params, n_sim, df),  "fig_ess.pdf")
     sv(fig_pcs(df),                 "fig_pcs.pdf")
     sv(fig_decomposition(df),       "fig_decomposition.pdf")
     sv(fig_nsens(n_res),            "fig_nsensitivity.pdf", w = 8, h = 6)
@@ -106,5 +138,9 @@ reproduce_paper <- function(out_dir = "adaptboin_output", n_sim = 2000L,
   message("Done. Outputs in ", normalizePath(out_dir))
   invisible(list(df = df, results = results, crm = crm_res, ess = ess_res,
                  ka = ka_res, nsens = n_res, loss = loss_res, tie = tie_res,
-                 steep = steep_df, straddle = str_df, elim = elim_df))
+                 gboins_calibration = gboins_cal,
+                 steep = steep_df, high_mtd = high_df, straddle = str_df,
+                 elim = elim_df,
+                 allocation = alloc_df,
+                 reference = ref_res))
 }

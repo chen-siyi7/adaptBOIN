@@ -22,6 +22,43 @@ crm_sensitivity <- function(scenarios_idx = c(1, 3, 4, 5, 6, 8),
   res
 }
 
+#' gBOINS calibration sensitivity at a target rate of 0.25
+#'
+#' The gBOINS paper reports binary-endpoint calibration constants for target
+#' rates 0.20 and 0.30, but not 0.25. This study brackets the primary
+#' interpolation by using the two published endpoint calibrations and their
+#' midpoint on the multiplier scale. The same deterministic trial seeds are
+#' used for all three calibrations within each scenario.
+#'
+#' @param scenarios_idx Scenario indices.
+#' @param n_sim Trials per cell.
+#' @param params Parameter list.
+#' @return A data frame of accuracy and safety operating characteristics.
+#' @export
+gboins_calibration_sensitivity <- function(
+    scenarios_idx = seq_along(scenarios), n_sim = 2000L,
+    params = adapt_params()) {
+  multipliers <- c(published_020 = 1.05, midpoint_025 = 1.075,
+                   published_030 = 1.10)
+  out <- list()
+  for (cal in names(multipliers)) {
+    pp <- params
+    pp$gb_c1 <- log(multipliers[[cal]])
+    pp$gb_c2 <- pp$gb_c1 / 3
+    atbl <- adapt_table(pp)
+    for (sc in scenarios_idx) {
+      r <- run_scenario(sc, "gboins", pp, n_sim, atbl)
+      out[[length(out) + 1L]] <- data.frame(
+        calibration = cal, multiplier = multipliers[[cal]],
+        c1 = pp$gb_c1, c2 = pp$gb_c2, sc = sc,
+        pcs = round(r$pcs, 1), pct_over = round(r$pct_over_sel, 1),
+        pod = round(r$pod, 1), mean_dlts = round(r$mean_dlts, 1),
+        stringsAsFactors = FALSE)
+    }
+  }
+  do.call(rbind, out)
+}
+
 #' Bernstein fallback threshold sensitivity
 #'
 #' @param thresholds Effective sample size thresholds.
@@ -143,8 +180,8 @@ loss_sensitivity <- function(k_overs = c(1.0, 1.5, 2.0, 3.0),
 #' }
 #' @export
 tie_sensitivity <- function(n_sim = 2000L, params = adapt_params(),
-                            designs = c("adaptive_iso", "boin", "gboins"),
-                            scenarios_idx = 1:6) {
+                            designs = c("adaptive_iso", "boin", "aboin", "gboins"),
+                            scenarios_idx = monotone_idx) {
   out <- list()
   for (th in c(TRUE, FALSE)) {
     pp <- params; pp$tie_high <- th

@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: >-
+  If you use adaptBOIN, please cite the software and the accompanying
+  manuscript.
+title: >-
+  adaptBOIN: Loss-Calibrated Escalation Boundaries and Dose-Elimination
+  Diagnostics for Phase I Dose-Finding Trials
+type: software
+authors:
+  - family-names: Chen
+    given-names: Siyi
+    email: sche11@lsuhsc.edu
+repository-code: https://github.com/chen-siyi7/adaptBOIN
+url: https://github.com/chen-siyi7/adaptBOIN
+version: 0.3.0
+date-released: 2026-09-02
+license: MIT

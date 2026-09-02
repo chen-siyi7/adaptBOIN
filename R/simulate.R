@@ -1,6 +1,6 @@
 #' Simulate one built-in scenario
 #'
-#' @param sc_idx Scenario index, 1 to 8.
+#' @param sc_idx Scenario index, 1 to 10.
 #' @param design_name Design name; see \code{\link{design_codes}}.
 #' @param params Parameter list.
 #' @param n_sim Number of simulated trials.
@@ -61,7 +61,8 @@ run_scenario_pi <- function(pi, design_name, params, n_sim, atbl, base_seed) {
 #' summarise_results(res)
 #' @export
 run_all <- function(params = adapt_params(), n_sim = 2000L,
-                    designs = names(design_codes), scenarios_idx = 1:8,
+                    designs = names(design_codes),
+                    scenarios_idx = seq_along(scenarios),
                     n_cores = 1L, verbose = FALSE) {
   atbl   <- adapt_table(params)
   combos <- expand.grid(sc = scenarios_idx, design = designs,

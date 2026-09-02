@@ -15,6 +15,27 @@ steep_scenarios <- local({
   })
 })
 
+#' High-MTD local-steepness scenarios
+#'
+#' A two-by-two diagnostic that places the MTD at dose 5 or dose 6 and varies
+#' the target-adjacent gap below the MTD.  Each curve has toxicity exactly at
+#' the target at its MTD, so the comparison isolates dose position and local
+#' steepness without introducing an offset-MTD or tie-convention effect.
+#'
+#' @format A list of lists with \code{name}, \code{position}, \code{profile},
+#'   \code{gap}, \code{pi} and \code{mtd}.
+#' @export
+high_mtd_scenarios <- list(
+  list(name = "d5 gradual", position = "d5", profile = "gradual",
+       gap = 0.05, pi = c(.05, .09, .14, .20, .25, .33), mtd = 5L),
+  list(name = "d5 abrupt", position = "d5", profile = "abrupt",
+       gap = 0.10, pi = c(.05, .08, .12, .15, .25, .60), mtd = 5L),
+  list(name = "d6 gradual", position = "d6", profile = "gradual",
+       gap = 0.07, pi = c(.02, .04, .06, .10, .18, .25), mtd = 6L),
+  list(name = "d6 steep", position = "d6", profile = "steep",
+       gap = 0.13, pi = c(.02, .04, .06, .09, .12, .25), mtd = 6L)
+)
+
 #' Offset-MTD scenarios
 #'
 #' Configurations in which no dose sits at exactly the target rate, which is the
@@ -49,6 +70,34 @@ steep_curve_study <- function(n_sim = 2000L, params = adapt_params(),
       r <- run_scenario_pi(s$pi, dn, params, n_sim, atbl, base)
       out[[length(out) + 1]] <- data.frame(
         scen = s$name, gap = s$gap, mtd = s$mtd, design = dn,
+        pcs = round(r$pcs, 1), pct_over = round(r$pct_over_sel, 1),
+        pod = round(r$pod, 1), dlts = round(r$mean_dlts, 2),
+        stringsAsFactors = FALSE)
+    }
+  }
+  do.call(rbind, out)
+}
+
+#' High-MTD local-steepness study
+#'
+#' @param n_sim Trials per cell.
+#' @param params Parameter list.
+#' @param designs Design names to compare.
+#' @return A data frame with accuracy and safety operating characteristics.
+#' @export
+high_mtd_steepness_study <- function(
+    n_sim = 2000L, params = adapt_params(),
+    designs = c("adaptive_iso", "adaptive_bern", "boin_bern", "boin",
+                "aboin", "crm", "mtpi2", "gboins")) {
+  atbl <- adapt_table(params); out <- list()
+  for (i in seq_along(high_mtd_scenarios)) {
+    s <- high_mtd_scenarios[[i]]
+    base <- 760000L + 1000L * i          # shared across designs
+    for (dn in designs) {
+      r <- run_scenario_pi(s$pi, dn, params, n_sim, atbl, base)
+      out[[length(out) + 1L]] <- data.frame(
+        scen = s$name, position = s$position, profile = s$profile,
+        gap = s$gap, mtd = s$mtd, design = dn,
         pcs = round(r$pcs, 1), pct_over = round(r$pct_over_sel, 1),
         pod = round(r$pod, 1), dlts = round(r$mean_dlts, 2),
         stringsAsFactors = FALSE)
@@ -113,8 +162,9 @@ elim_rule_study <- function(n_sim = 2000L, params = adapt_params(),
                           pi = offset_scenarios[[2]]$pi)))
   rules <- list(
     standard   = list(phi_elim = params$phi_tgt, elim_a0 = 1.0, elim_b0 = 1.0),
-    equiv_phi2 = list(phi_elim = params$phi2, elim_a0 = params$a0,
-                      elim_b0 = params$b0))
+    # Hold the elimination prior fixed so that this comparison isolates the
+    # threshold.  Earlier revision outputs changed both the threshold and prior.
+    equiv_phi2 = list(phi_elim = params$phi2, elim_a0 = 1.0, elim_b0 = 1.0))
   if (is.null(Nvals)) Nvals <- params$N
   out <- list()
   for (N in Nvals) for (i in seq_along(scs)) {

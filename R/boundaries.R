@@ -1,8 +1,10 @@
 #' Build the adaptive decision table
 #'
 #' @param params Parameter list from \code{\link{adapt_params}}.
+#' @param check If true, warn when the loss matrix violates the no-DLT
+#'   escalation condition.
 #' @return A list of action codes indexed by cohort size; see
-#'   \code{\link{build_adap_tbl}}.
+#'   the internal C++ table builder.
 #' @examples
 #' adapt_table()[["30"]]
 #' @export
@@ -70,5 +72,27 @@ boundaries_by_loss <- function(k_overs = c(1.0, 1.5, 2.0, 3.0),
     b <- boundary_rates(pp, ns)
     data.frame(k_over = k, n = b$n,
                lambda_low = b$adaptive_low, lambda_high = b$adaptive_high)
+  }))
+}
+
+#' aBOIN adaptive boundaries
+#'
+#' Computes the no-history adaptive BOIN boundaries of Li and Pan (2020).
+#' The first \code{ab_N0} patients at a dose use the fixed BOIN boundaries;
+#' thereafter the two point alternatives shrink toward the target according to
+#' the published acceleration factors.
+#'
+#' @param ns Cumulative sample sizes at a dose.
+#' @param params Parameter list from \code{\link{adapt_params}}.
+#' @return A data frame with the escalation and de-escalation boundaries.
+#' @export
+aboin_boundaries <- function(ns = c(3, 6, 9, 12, 15, 30),
+                             params = adapt_params()) {
+  do.call(rbind, lapply(ns, function(n) {
+    b <- aboin_bounds_cpp(params$phi_tgt, as.integer(n),
+                          params$ab_delta1, params$ab_delta2,
+                          params$ab_g1, params$ab_g2, params$ab_N0,
+                          params$lam1, params$lam2)
+    data.frame(n = n, lambda_e = unname(b[1]), lambda_d = unname(b[2]))
   }))
 }

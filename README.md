@@ -1,5 +1,8 @@
 # adaptBOIN
 
+[![R-CMD-check](https://github.com/chen-siyi7/adaptBOIN/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chen-siyi7/adaptBOIN/actions/workflows/R-CMD-check.yaml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Loss-calibrated escalation boundaries and dose-elimination diagnostics for
 Phase I dose-finding trials.
 
@@ -17,17 +20,23 @@ lookup table of the same shape as BOIN's. An overdose-aversion multiplier
 overdosing and underdosing an explicit design input rather than an implicit
 consequence of fixed cutoffs.
 
-The package also provides the comparator designs used in the paper (BOIN, gBOINS,
-mTPI-2 and the continual reassessment method), a monotone Bernstein polynomial
+The package also provides the comparator designs used in the paper (BOIN, aBOIN,
+gBOINS, mTPI-2 and the continual reassessment method), a monotone Bernstein polynomial
 end-of-trial estimator, and tools for examining how the dose-elimination rule
 interacts with the closest-dose definition of the MTD.
 
 ## Installation
 
 ```r
-# install.packages("remotes")
+# Install the development version from GitHub:
+install.packages("remotes")
 remotes::install_github("chen-siyi7/adaptBOIN")
+
+# Or install from a local source directory:
+install.packages("adaptBOIN", repos = NULL, type = "source")
 ```
+
+The repository includes the complete 2,000-trial outputs used in the manuscript.
 
 A C++ compiler is required, since the simulation engine is written in C++ and
 compiled on installation. On macOS run `xcode-select --install` first. On Windows
@@ -51,7 +60,8 @@ boundaries_by_loss(k_overs = c(1, 1.5, 2))
 run_scenario(6, "adaptive_iso", n_sim = 500L)$pcs
 
 # a grid, summarised
-res <- run_all(n_sim = 500L, designs = c("boin", "adaptive_iso", "gboins"))
+res <- run_all(n_sim = 500L,
+               designs = c("boin", "aboin", "adaptive_iso", "gboins"))
 summarise_results(res)
 ```
 
@@ -77,6 +87,10 @@ Rscript $(Rscript -e 'cat(system.file("scripts/reproduce_paper.R", package="adap
 Output lands in `adaptboin_output/` as CSV tables and, if **ggplot2** is
 installed, PDF figures. Start with a small `n_sim`: the two Bernstein
 configurations draw 2000 importance samples per trial and dominate the runtime.
+
+The archived results used for the submitted manuscript are stored in
+`revision_output/`. The independent verification archive and its audit summary
+are stored in `verification_output_20260830/`.
 
 ## Two conventions that change results
 
@@ -117,11 +131,24 @@ run_all(params = adapt_params_original(), n_sim = 2000L)
 | `boin_bern` | standard BOIN | Bernstein posterior |
 | `boin` | standard BOIN | isotonic regression |
 | `crm` | continual reassessment method | posterior mean |
+| `aboin` | sample-size-adaptive aBOIN boundaries | isotonic regression |
 | `mtpi2` | mTPI-2 unit probability mass | isotonic regression |
+| `mtpi` | original three-interval mTPI (validation/sensitivity) | isotonic regression |
 | `gboins` | gBOINS shrinkage boundaries | isotonic regression |
+
+The aBOIN implementation uses the published no-history calibration with a
+six-patient BOIN lead-in and explicit `aboin_delta1`, `aboin_delta2`,
+`aboin_g1` and `aboin_g2` parameters. Its boundaries are checked against the
+published equations. The original mTPI and mTPI-2 action tables are implemented
+separately and tested against independent R calculations for every achievable
+DLT-count cell.
 
 The gBOINS implementation was validated against the boundary table published by
 Mu, Hu, Xu and Pan (2021) at target rates of 0.20 and 0.30 before use.
+
+The full reproduction also runs an independent four-chain adaptive Metropolis
+diagnostic for representative Bernstein posteriors and writes chain-convergence,
+effective-sample-size and dose-level posterior comparisons to CSV.
 
 ## Targeted studies
 

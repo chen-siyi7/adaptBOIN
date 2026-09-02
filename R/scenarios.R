@@ -1,8 +1,9 @@
 #' Dose-toxicity scenarios
 #'
-#' Eight scenarios. The MTD is the dose closest to the target rate with ties
+#' Ten scenarios. The MTD is the dose closest to the target rate with ties
 #' broken toward the higher dose. Scenarios 1 and 4 contain exact ties.
-#' Scenarios 7 and 8 are non-monotone robustness checks.
+#' Scenarios 7, 8 and 10 are non-monotone robustness checks. Scenario 9 places
+#' the MTD at the lowest dose; Scenario 10 is a single-peak curve.
 #'
 #' @format A list of lists, each with \code{name}, \code{pi} and \code{mtd}.
 #' @export
@@ -14,7 +15,9 @@ scenarios <- list(
   list(name = "Late toxicity",       pi = c(.02,.04,.06,.10,.18,.25), mtd = 6L),
   list(name = "Steep mid-range",     pi = c(.03,.07,.25,.50,.70,.85), mtd = 3L),
   list(name = "Mild non-monotone",   pi = c(.10,.15,.24,.27,.20,.30), mtd = 3L),
-  list(name = "Strong non-monotone", pi = c(.08,.15,.25,.30,.18,.40), mtd = 3L)
+  list(name = "Strong non-monotone", pi = c(.08,.15,.25,.30,.18,.40), mtd = 3L),
+  list(name = "Lowest-dose MTD",     pi = c(.25,.40,.55,.68,.78,.86), mtd = 1L),
+  list(name = "Single-peak toxicity",pi = c(.05,.12,.25,.42,.60,.38), mtd = 3L)
 )
 
 #' Design codes understood by the C++ engine
@@ -24,15 +27,17 @@ scenarios <- list(
 #' while \code{mtpi2} (code 7) is the mTPI-2 refinement of Guo et al. (2017),
 #' which uses subintervals of equal width. The two are distinct designs and their
 #' decision tables differ; mTPI-2 de-escalates somewhat earlier. The accompanying
-#' manuscript reports \code{mtpi}.
+#' manuscript reports \code{mtpi2}; \code{mtpi} is retained for validation and
+#' sensitivity checks.
 #'
 #' @format A named integer vector.
 #' @export
 design_codes <- c(adaptive_iso = 0L, adaptive_bern = 1L, boin_bern = 2L,
-                  boin = 3L, crm = 4L, mtpi = 5L, gboins = 6L, mtpi2 = 7L)
+                  boin = 3L, crm = 4L, mtpi = 5L, gboins = 6L, mtpi2 = 7L,
+                  aboin = 8L)
 
-monotone_idx <- 1:6
-primary_designs <- c("adaptive_iso", "boin", "crm", "mtpi", "gboins")
+monotone_idx <- c(1:6, 9L)
+primary_designs <- c("adaptive_iso", "boin", "aboin", "crm", "mtpi2", "gboins")
 
 #' True MTD under a stated tie convention
 #'

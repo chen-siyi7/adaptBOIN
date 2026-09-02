@@ -21,7 +21,9 @@
 #' used in an earlier version of this work.
 #'
 #' @keywords internal
+#' @useDynLib adaptBOIN, .registration = TRUE
+#' @importFrom Rcpp evalCpp
 "_PACKAGE"
 
 ## quiet R CMD check for the internal data objects
-utils::globalVariables(c("scenarios", "design_codes"))
+utils::globalVariables(c(".data", "scenarios", "design_codes"))

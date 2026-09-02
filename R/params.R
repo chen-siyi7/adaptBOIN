@@ -8,8 +8,10 @@
 #' @param k_over Overdose-aversion multiplier applied to the two entries that
 #'   penalise failing to de-escalate from an overtoxic dose. \code{k_over = 1}
 #'   gives the symmetric matrix; larger values encode the judgement that
-#'   overdosing is the more serious error. Values of 3 or above are inadmissible,
-#'   because the rule then fails to escalate after a cohort with no events.
+#'   overdosing is the more serious error. Values at or above the design-specific
+#'   bound returned by \code{kappa_max()} are inadmissible (2.6097 under the default
+#'   settings), because the rule then fails to escalate after a cohort with no
+#'   events.
 #' @return A 3 by 3 matrix with dimnames.
 #' @examples
 #' make_loss()
@@ -29,8 +31,10 @@ make_loss <- function(mild = 0.5, sev = 1.5, k_over = 1.0) {
 #' @return A list of design settings. Fields of particular note are
 #'   \code{tie_high} (higher-dose tie convention), \code{phi_elim},
 #'   \code{elim_a0} and \code{elim_b0} (elimination rule, defaulting to the
-#'   standard BOIN rule), \code{loss} (the decision loss), and \code{gb_c1},
-#'   \code{gb_c2}, \code{gb_eps}, \code{gb_N0} (gBOINS calibration).
+#'   standard BOIN rule), \code{loss} (the decision loss), \code{gb_c1},
+#'   \code{gb_c2}, \code{gb_eps}, \code{gb_N0} (gBOINS calibration), and
+#'   \code{ab_delta1}, \code{ab_delta2}, \code{ab_g1}, \code{ab_g2},
+#'   \code{ab_N0} (aBOIN calibration).
 #' @examples
 #' p <- adapt_params()
 #' p$phi_elim
@@ -46,6 +50,8 @@ adapt_params <- function() {
     tie_high = TRUE,
     phi_elim = 0.25, elim_a0 = 1.0, elim_b0 = 1.0,
     gb_c1 = log(1.075), gb_c2 = log(1.075) / 3, gb_eps = 0.5, gb_N0 = 6L,
+    ab_delta1 = 0.10, ab_delta2 = 0.10,
+    ab_g1 = 0.4, ab_g2 = 0.9, ab_N0 = 6L,
     loss = make_loss(k_over = 1.0)
   )
 }
@@ -82,7 +88,7 @@ adapt_params_original <- function() {
 #' @return The supremum of admissible \code{k_over}. Values at or above it produce
 #'   a design that will not escalate after a first cohort with no events.
 #' @examples
-#' kappa_max()          # about 2.61 for the default settings
+#' kappa_max()          # about 2.6097 for the default settings
 #' @export
 kappa_max <- function(params = adapt_params(), mild = 0.5, sev = 1.5) {
   a <- params$a0
