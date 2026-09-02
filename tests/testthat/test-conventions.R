@@ -23,6 +23,34 @@ test_that("scenarios with an MTD above target are identified", {
   expect_equal(affected_scenarios(), c(1L, 4L))
 })
 
+test_that("the high-MTD diagnostic varies local steepness at d5 and d6", {
+  expect_equal(vapply(high_mtd_scenarios, `[[`, integer(1), "mtd"),
+               c(5L, 5L, 6L, 6L))
+  expect_equal(vapply(high_mtd_scenarios, function(s) mtd_of(s$pi), integer(1)),
+               c(5L, 5L, 6L, 6L))
+  expect_equal(vapply(high_mtd_scenarios, `[[`, numeric(1), "gap"),
+               c(.05, .10, .07, .13))
+})
+
+test_that("the high-MTD diagnostic covers both proposed configurations", {
+  z <- high_mtd_steepness_study(n_sim = 2L)
+  expect_setequal(unique(z$design),
+                  c("adaptive_iso", "adaptive_bern", "boin_bern", "boin",
+                    "aboin", "crm", "mtpi2", "gboins"))
+  expect_equal(nrow(z), 32L)
+})
+
+test_that("gBOINS calibration sensitivity brackets the primary interpolation", {
+  z <- gboins_calibration_sensitivity(scenarios_idx = 1:2, n_sim = 2L)
+  expect_setequal(unique(z$calibration),
+                  c("published_020", "midpoint_025", "published_030"))
+  expect_equal(nrow(z), 6L)
+  expect_equal(sort(unique(z$multiplier)), c(1.05, 1.075, 1.10))
+  p <- adapt_params()
+  expect_equal(p$gb_c1, z$c1[z$calibration == "midpoint_025"][1])
+  expect_equal(p$gb_c2, z$c2[z$calibration == "midpoint_025"][1])
+})
+
 test_that("adapt_params_original restores the previous conventions", {
   p <- adapt_params_original()
   expect_false(p$tie_high)

@@ -1,0 +1,37 @@
+"scen","N","mtd","design","pcs","pcs_acc","pct_over","pod"
+"MTD below target (0.22)",30,3,"adaptive_iso",61.8,61.8,19.1,17.4
+"MTD below target (0.22)",30,3,"boin",58,58,26.4,17.2
+"MTD below target (0.22)",30,3,"gboins",58.4,58.4,26.6,17.5
+"MTD above target (0.28)",30,3,"adaptive_iso",64.1,64.1,11.6,12.9
+"MTD above target (0.28)",30,3,"boin",58.3,58.3,19.1,12.9
+"MTD above target (0.28)",30,3,"gboins",58.1,58.1,19.3,13.2
+"Symmetric straddle (0.20/0.30)",30,4,"adaptive_iso",35.4,80.2,5.2,5.6
+"Symmetric straddle (0.20/0.30)",30,4,"boin",37.8,78,9.3,6
+"Symmetric straddle (0.20/0.30)",30,4,"gboins",38.2,78.8,9.3,6
+"MTD below target (0.22)",45,3,"adaptive_iso",69.4,69.4,14.8,17.8
+"MTD below target (0.22)",45,3,"boin",67,67,20,18.4
+"MTD below target (0.22)",45,3,"gboins",67.4,67.4,19.9,19.4
+"MTD above target (0.28)",45,3,"adaptive_iso",65.9,65.9,6.4,11.7
+"MTD above target (0.28)",45,3,"boin",63.5,63.5,12.4,12.4
+"MTD above target (0.28)",45,3,"gboins",63.9,64,12,13.1
+"Symmetric straddle (0.20/0.30)",45,4,"adaptive_iso",37.6,86.4,3,5.5
+"Symmetric straddle (0.20/0.30)",45,4,"boin",39.1,83.3,7.3,6.5
+"Symmetric straddle (0.20/0.30)",45,4,"gboins",40.9,84.7,6.7,6.9
+"MTD below target (0.22)",60,3,"adaptive_iso",76.4,76.4,10.2,16.4
+"MTD below target (0.22)",60,3,"boin",75.8,75.8,13.7,17.6
+"MTD below target (0.22)",60,3,"gboins",73.8,73.8,14.7,18.6
+"MTD above target (0.28)",60,3,"adaptive_iso",67.6,67.6,3.8,9.9
+"MTD above target (0.28)",60,3,"boin",67.3,67.3,6.6,10.9
+"MTD above target (0.28)",60,3,"gboins",67.6,67.6,7.3,11.8
+"Symmetric straddle (0.20/0.30)",60,4,"adaptive_iso",38.1,89.5,2.1,4.8
+"Symmetric straddle (0.20/0.30)",60,4,"boin",41.3,88.1,4.6,6.1
+"Symmetric straddle (0.20/0.30)",60,4,"gboins",43,89.2,3.6,6.5
+"MTD below target (0.22)",90,3,"adaptive_iso",84.6,84.6,3.4,13.1
+"MTD below target (0.22)",90,3,"boin",82.3,82.3,7,15.1
+"MTD below target (0.22)",90,3,"gboins",81,81,7.8,16.2
+"MTD above target (0.28)",90,3,"adaptive_iso",63.4,63.4,1.4,7.3
+"MTD above target (0.28)",90,3,"boin",67.6,67.6,2.4,8.3
+"MTD above target (0.28)",90,3,"gboins",67.8,67.8,3.9,9.4
+"Symmetric straddle (0.20/0.30)",90,4,"adaptive_iso",35,91.7,0.9,3.6
+"Symmetric straddle (0.20/0.30)",90,4,"boin",41,91.8,1.5,4.9
+"Symmetric straddle (0.20/0.30)",90,4,"gboins",42.6,91.9,1.4,5.4

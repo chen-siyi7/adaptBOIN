@@ -55,6 +55,57 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// aboin_bounds_cpp
+NumericVector aboin_bounds_cpp(double phi0, int n, double delta1, double delta2, double g1, double g2, int N0, double fixed_le, double fixed_ld);
+RcppExport SEXP _adaptBOIN_aboin_bounds_cpp(SEXP phi0SEXP, SEXP nSEXP, SEXP delta1SEXP, SEXP delta2SEXP, SEXP g1SEXP, SEXP g2SEXP, SEXP N0SEXP, SEXP fixed_leSEXP, SEXP fixed_ldSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type phi0(phi0SEXP);
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type delta1(delta1SEXP);
+    Rcpp::traits::input_parameter< double >::type delta2(delta2SEXP);
+    Rcpp::traits::input_parameter< double >::type g1(g1SEXP);
+    Rcpp::traits::input_parameter< double >::type g2(g2SEXP);
+    Rcpp::traits::input_parameter< int >::type N0(N0SEXP);
+    Rcpp::traits::input_parameter< double >::type fixed_le(fixed_leSEXP);
+    Rcpp::traits::input_parameter< double >::type fixed_ld(fixed_ldSEXP);
+    rcpp_result_gen = Rcpp::wrap(aboin_bounds_cpp(phi0, n, delta1, delta2, g1, g2, N0, fixed_le, fixed_ld));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mtpi_actions_cpp
+IntegerMatrix mtpi_actions_cpp(int N, int m, double phi1, double phi2, double a0, double b0);
+RcppExport SEXP _adaptBOIN_mtpi_actions_cpp(SEXP NSEXP, SEXP mSEXP, SEXP phi1SEXP, SEXP phi2SEXP, SEXP a0SEXP, SEXP b0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type N(NSEXP);
+    Rcpp::traits::input_parameter< int >::type m(mSEXP);
+    Rcpp::traits::input_parameter< double >::type phi1(phi1SEXP);
+    Rcpp::traits::input_parameter< double >::type phi2(phi2SEXP);
+    Rcpp::traits::input_parameter< double >::type a0(a0SEXP);
+    Rcpp::traits::input_parameter< double >::type b0(b0SEXP);
+    rcpp_result_gen = Rcpp::wrap(mtpi_actions_cpp(N, m, phi1, phi2, a0, b0));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mtpi2_actions_cpp
+IntegerMatrix mtpi2_actions_cpp(int N, int m, double phi1, double phi2, double a0, double b0);
+RcppExport SEXP _adaptBOIN_mtpi2_actions_cpp(SEXP NSEXP, SEXP mSEXP, SEXP phi1SEXP, SEXP phi2SEXP, SEXP a0SEXP, SEXP b0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type N(NSEXP);
+    Rcpp::traits::input_parameter< int >::type m(mSEXP);
+    Rcpp::traits::input_parameter< double >::type phi1(phi1SEXP);
+    Rcpp::traits::input_parameter< double >::type phi2(phi2SEXP);
+    Rcpp::traits::input_parameter< double >::type a0(a0SEXP);
+    Rcpp::traits::input_parameter< double >::type b0(b0SEXP);
+    rcpp_result_gen = Rcpp::wrap(mtpi2_actions_cpp(N, m, phi1, phi2, a0, b0));
+    return rcpp_result_gen;
+END_RCPP
+}
 // one_trial
 List one_trial(NumericVector pi_r, int design, List atbl, List p, int seed);
 RcppExport SEXP _adaptBOIN_one_trial(SEXP pi_rSEXP, SEXP designSEXP, SEXP atblSEXP, SEXP pSEXP, SEXP seedSEXP) {
@@ -75,6 +126,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_adaptBOIN_build_adap_tbl", (DL_FUNC) &_adaptBOIN_build_adap_tbl, 7},
     {"_adaptBOIN_run_scenario_cpp", (DL_FUNC) &_adaptBOIN_run_scenario_cpp, 6},
     {"_adaptBOIN_prior_mean_curve", (DL_FUNC) &_adaptBOIN_prior_mean_curve, 2},
+    {"_adaptBOIN_aboin_bounds_cpp", (DL_FUNC) &_adaptBOIN_aboin_bounds_cpp, 9},
+    {"_adaptBOIN_mtpi_actions_cpp", (DL_FUNC) &_adaptBOIN_mtpi_actions_cpp, 6},
+    {"_adaptBOIN_mtpi2_actions_cpp", (DL_FUNC) &_adaptBOIN_mtpi2_actions_cpp, 6},
     {"_adaptBOIN_one_trial", (DL_FUNC) &_adaptBOIN_one_trial, 5},
     {NULL, NULL, 0}
 };

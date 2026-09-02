@@ -176,7 +176,7 @@ static int bayes_action(int s, int n,
 }
 
 // ------------------------------------------------------------
-// SAFETY RULE  P(pi > phi2 | s,n) > rho  -> eliminate
+// SAFETY RULE  P(pi > phi_elim | s,n) > rho  -> eliminate
 // ------------------------------------------------------------
 
 // phi_elim: toxicity level used in the overdose test (standard BOIN uses
@@ -329,9 +329,9 @@ static CrmRes crm_step(const std::vector<int>&    nv,
 // mTPI-2  (UPM criterion)
 // ------------------------------------------------------------
 
-static int mtpi2_action(int s, int n,
-                         double phi1, double phi2,
-                         double a0,   double b0) {
+static int mtpi_action(int s, int n,
+                       double phi1, double phi2,
+                       double a0,   double b0) {
   double a=a0+s, b=b0+n-s;
   double m1=pbeta_cpp(phi1,a,b);
   double m2=pbeta_cpp(phi2,a,b)-m1;
@@ -340,6 +340,34 @@ static int mtpi2_action(int s, int n,
   if(u1>=u2&&u1>=u3) return 0;
   if(u3>=u2&&u3>=u1) return 2;
   return 1;
+}
+
+// mTPI-2 partitions the under- and over-dosing regions into intervals having
+// the same width as the equivalence interval (with shorter edge intervals),
+// then selects the interval with largest unit probability mass.
+static int mtpi2_action(int s, int n,
+                        double phi1, double phi2,
+                        double a0,   double b0) {
+  double a=a0+s, b=b0+n-s;
+  double width=phi2-phi1;
+  int best_action=1;
+  double best_upm=(pbeta_cpp(phi2,a,b)-pbeta_cpp(phi1,a,b))/width;
+
+  double hi=phi1;
+  while (hi>0.0) {
+    double lo=std::max(0.0,hi-width);
+    double upm=(pbeta_cpp(hi,a,b)-pbeta_cpp(lo,a,b))/(hi-lo);
+    if (upm>best_upm) { best_upm=upm; best_action=0; }
+    hi=lo;
+  }
+  double lo=phi2;
+  while (lo<1.0) {
+    double hi2=std::min(1.0,lo+width);
+    double upm=(pbeta_cpp(hi2,a,b)-pbeta_cpp(lo,a,b))/(hi2-lo);
+    if (upm>best_upm) { best_upm=upm; best_action=2; }
+    lo=hi2;
+  }
+  return best_action;
 }
 
 // ------------------------------------------------------------
@@ -382,10 +410,39 @@ static std::pair<double,double> gboins_bounds(double phi0, int n,
   return {le, ld};
 }
 
+// ------------------------------------------------------------
+// aBOIN adaptive shrinking boundaries (Li and Pan 2020, PLOS ONE),
+// no-history version. After a fixed-BOIN lead-in, the point alternatives are
+// phi_1j = phi - Delta_1 / n_j^(g_1/2) and
+// phi_2j = phi + Delta_2 / n_j^(g_2/2), and are inserted into the standard
+// BOIN optimal-boundary formula. The paper uses Delta_1=Delta_2=0.4*phi,
+// g_1=0.4, g_2=0.9, and a six-patient lead-in.
+// ------------------------------------------------------------
+
+static std::pair<double,double> aboin_bounds(double phi0, int n,
+                                             double delta1, double delta2,
+                                             double g1, double g2,
+                                             int N0,
+                                             double fixed_le,
+                                             double fixed_ld) {
+  if (n <= N0) return {fixed_le, fixed_ld};
+
+  double phi1 = phi0 - delta1/std::pow((double)n,g1/2.0);
+  double phi2 = phi0 + delta2/std::pow((double)n,g2/2.0);
+  phi1 = std::max(1e-10,std::min(phi0-1e-10,phi1));
+  phi2 = std::max(phi0+1e-10,std::min(1.0-1e-10,phi2));
+
+  double le = std::log((1.0-phi1)/(1.0-phi0)) /
+              std::log(phi0*(1.0-phi1)/((1.0-phi0)*phi1));
+  double ld = std::log((1.0-phi0)/(1.0-phi2)) /
+              std::log(phi2*(1.0-phi0)/((1.0-phi2)*phi0));
+  return {le,ld};
+}
+
 // ============================================================
 // TRIAL SIMULATION
 // design: 0=adaptive_iso 1=adaptive_bern 2=boin_bern
-//         3=boin 4=crm 5=mtpi2
+//         3=boin 4=crm 5=mtpi 6=gBOINS 7=mtpi2 8=aBOIN
 // ============================================================
 
 struct TrialRes {
@@ -412,6 +469,8 @@ static TrialRes sim_trial(
     bool tie_high,                            // higher-dose tie-break if true
     double phi_elim, double elim_a0, double elim_b0, // elimination rule
     double gb_c1, double gb_c2, double gb_eps, int gb_N0, // gBOINS calibration
+    double ab_delta1, double ab_delta2, double ab_g1, double ab_g2,
+    int ab_N0,                              // aBOIN calibration
     uint32_t seed)
 {
   std::mt19937 rng(seed);
@@ -471,7 +530,17 @@ static TrialRes sim_trial(
         if(rate<=gb.first) action=0;
         else if(rate>=gb.second) action=2;
         else action=1;
-      } else { // mtpi2 (design==5)
+      } else if (design==8) {
+        // aBOIN: Li--Pan adaptive shrinking boundaries, no historical prior
+        double rate=(double)sv[cur]/nv[cur];
+        std::pair<double,double> ab=aboin_bounds(
+          phi_tgt,nv[cur],ab_delta1,ab_delta2,ab_g1,ab_g2,ab_N0,lam1,lam2);
+        if(rate<=ab.first) action=0;
+        else if(rate>=ab.second) action=2;
+        else action=1;
+      } else if (design==5) {
+        action=mtpi_action(sv[cur],nv[cur],phi1,phi2,a0,b0);
+      } else { // mTPI-2 (design==7)
         action=mtpi2_action(sv[cur],nv[cur],phi1,phi2,a0,b0);
       }
 
@@ -498,7 +567,7 @@ static TrialRes sim_trial(
   // ---- end-of-trial MTD selection ----
   double ess=-1.0; int fell_back=0, mtd_sel=-1;
 
-  if (design==0||design==3||design==5||design==6) {
+  if (design==0||design==3||design==5||design==6||design==7||design==8) {
     mtd_sel=iso_mtd(nv,sv,elim,phi_tgt,J,tie_high);
   } else if (design==1||design==2) {
     BernRes br=bern_mtd(nv,sv,elim,phi_tgt,K,alpha_d,M_IS,ESS_thr,J,tie_high,rng);
@@ -610,6 +679,15 @@ List run_scenario_cpp(NumericVector pi_r,
   double gb_eps = p.containsElementNamed("gb_eps") ? (double)p["gb_eps"] : 0.5;
   int    gb_N0  = p.containsElementNamed("gb_N0")  ? (int)p["gb_N0"]     : 6;
 
+  // aBOIN calibration (Li and Pan 2020), no-history version.
+  double ab_delta1 = p.containsElementNamed("ab_delta1") ?
+    (double)p["ab_delta1"] : 0.4*phi_tgt;
+  double ab_delta2 = p.containsElementNamed("ab_delta2") ?
+    (double)p["ab_delta2"] : 0.4*phi_tgt;
+  double ab_g1 = p.containsElementNamed("ab_g1") ? (double)p["ab_g1"] : 0.4;
+  double ab_g2 = p.containsElementNamed("ab_g2") ? (double)p["ab_g2"] : 0.9;
+  int    ab_N0 = p.containsElementNamed("ab_N0") ? (int)p["ab_N0"] : 6;
+
   // accumulators
   double spcs=0,spcs2=0,spod=0,sdlts=0;
   double sosel=0,susel=0,sany=0,snab=0,sfb=0,selim=0;
@@ -623,6 +701,7 @@ List run_scenario_cpp(NumericVector pi_r,
                      skel,crm_sd,crm_ng,crm_thr,
                      tie_high,phi_elim,elim_a0,elim_b0,
                      gb_c1,gb_c2,gb_eps,gb_N0,
+                     ab_delta1,ab_delta2,ab_g1,ab_g2,ab_N0,
                      (uint32_t)(base_seed+i));
     spcs+=r.pcs; spcs2+=(double)r.pcs*r.pcs; spod+=r.pod;
     sdlts+=r.dlts;
@@ -681,6 +760,51 @@ List prior_mean_curve(int K, int J) {
 }
 
 // ============================================================
+// EXPORTED: aBOIN boundaries (validation and reporting)
+// [[Rcpp::export]]
+NumericVector aboin_bounds_cpp(double phi0, int n,
+                               double delta1, double delta2,
+                               double g1, double g2, int N0,
+                               double fixed_le, double fixed_ld) {
+  std::pair<double,double> b=aboin_bounds(
+    phi0,n,delta1,delta2,g1,g2,N0,fixed_le,fixed_ld);
+  return NumericVector::create(Named("lambda_e")=b.first,
+                               Named("lambda_d")=b.second);
+}
+
+// ============================================================
+// EXPORTED: mTPI and mTPI-2 actions (validation)
+// [[Rcpp::export]]
+IntegerMatrix mtpi_actions_cpp(int N, int m,
+                               double phi1, double phi2,
+                               double a0, double b0) {
+  int nr=N/m;
+  IntegerMatrix out(nr,N+1);
+  std::fill(out.begin(),out.end(),NA_INTEGER);
+  for (int ii=0;ii<nr;++ii) {
+    int n=(ii+1)*m;
+    for (int s=0;s<=n;++s)
+      out(ii,s)=mtpi_action(s,n,phi1,phi2,a0,b0);
+  }
+  return out;
+}
+
+// [[Rcpp::export]]
+IntegerMatrix mtpi2_actions_cpp(int N, int m,
+                                double phi1, double phi2,
+                                double a0, double b0) {
+  int nr=N/m;
+  IntegerMatrix out(nr,N+1);
+  std::fill(out.begin(),out.end(),NA_INTEGER);
+  for (int ii=0;ii<nr;++ii) {
+    int n=(ii+1)*m;
+    for (int s=0;s<=n;++s)
+      out(ii,s)=mtpi2_action(s,n,phi1,phi2,a0,b0);
+  }
+  return out;
+}
+
+// ============================================================
 // EXPORTED: single trial (testing/illustration)
 // [[Rcpp::export]]
 List one_trial(NumericVector pi_r, int design, List atbl, List p, int seed) {
@@ -705,12 +829,21 @@ List one_trial(NumericVector pi_r, int design, List atbl, List p, int seed) {
   double gb_c2  = p.containsElementNamed("gb_c2")  ? (double)p["gb_c2"]  : std::log(1.075)/3.0;
   double gb_eps = p.containsElementNamed("gb_eps") ? (double)p["gb_eps"] : 0.5;
   int    gb_N0  = p.containsElementNamed("gb_N0")  ? (int)p["gb_N0"]     : 6;
+  double ab_delta1 = p.containsElementNamed("ab_delta1") ?
+    (double)p["ab_delta1"] : 0.4*phi_tgt;
+  double ab_delta2 = p.containsElementNamed("ab_delta2") ?
+    (double)p["ab_delta2"] : 0.4*phi_tgt;
+  double ab_g1 = p.containsElementNamed("ab_g1") ? (double)p["ab_g1"] : 0.4;
+  double ab_g2 = p.containsElementNamed("ab_g2") ? (double)p["ab_g2"] : 0.9;
+  int    ab_N0 = p.containsElementNamed("ab_N0") ? (int)p["ab_N0"] : 6;
 
   auto r=sim_trial(pi,design,atbl,phi_tgt,phi1,phi2,rho,a0,b0,N,m,J,
                    lam1,lam2,K,alpha_d,M_IS,ESS_thr,
                    skel,crm_sd,crm_ng,crm_thr,
                    tie_high,phi_elim,elim_a0,elim_b0,
-                   gb_c1,gb_c2,gb_eps,gb_N0,(uint32_t)seed);
+                   gb_c1,gb_c2,gb_eps,gb_N0,
+                   ab_delta1,ab_delta2,ab_g1,ab_g2,ab_N0,
+                   (uint32_t)seed);
 
   return List::create(
     Named("mtd_sel") =r.mtd_sel+1,
